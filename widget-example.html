@@ -1,0 +1,60 @@
+<!-- Drop this into any client's site (plain HTML, WordPress, Squarespace embed block, etc).
+     Change API_URL to your deployed Vercel URL and BUSINESS_ID to the client's key in clients.ts. -->
+<div id="md-chat" style="max-width:400px;border:1px solid #ddd;border-radius:12px;overflow:hidden;font-family:sans-serif">
+  <div id="md-chat-messages" style="padding:16px;min-height:180px;max-height:320px;overflow-y:auto"></div>
+  <div style="display:flex;gap:8px;padding:12px;border-top:1px solid #ddd">
+    <input id="md-chat-input" type="text" placeholder="Ask a question..." style="flex:1;padding:10px;border:1px solid #ccc;border-radius:999px">
+    <button id="md-chat-send" style="border:none;background:#2c539c;color:#fff;width:40px;height:40px;border-radius:50%;cursor:pointer">→</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const API_URL = "https://YOUR-DEPLOYMENT.vercel.app/api/chat";
+  const BUSINESS_ID = "la-nonita"; // must match a key in clients.ts
+
+  const messagesEl = document.getElementById("md-chat-messages");
+  const inputEl = document.getElementById("md-chat-input");
+  const sendBtn = document.getElementById("md-chat-send");
+  let history = [];
+  let sending = false;
+
+  function addMessage(text, who) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    div.style.margin = "6px 0";
+    div.style.textAlign = who === "user" ? "right" : "left";
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function send() {
+    const message = inputEl.value.trim();
+    if (!message || sending) return;
+    sending = true;
+    sendBtn.disabled = true;
+    inputEl.value = "";
+    addMessage(message, "user");
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: BUSINESS_ID, message, history }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "request_failed");
+      addMessage(data.reply, "bot");
+      history.push({ role: "user", content: message }, { role: "assistant", content: data.reply });
+    } catch (e) {
+      addMessage("Sorry, something went wrong. Please try again.", "bot");
+    } finally {
+      sending = false;
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener("click", send);
+  inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+})();
+</script>
