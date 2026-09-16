@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marea Digital | Asistente</title>
+  <style>
+    :root { --ink:#17232b; --muted:#64747b; --paper:#f5f1e8; --card:#fffdf8; --teal:#176b68; --mint:#d8eee5; --line:#d9ddd6; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; color:var(--ink); background:radial-gradient(circle at 15% 10%, #d8eee5 0 18%, transparent 42%), linear-gradient(135deg, #f5f1e8, #e8efeb); font-family:Georgia, 'Times New Roman', serif; }
+    .chat { width:min(100%, 520px); overflow:hidden; border:1px solid rgba(23,35,43,.15); border-radius:18px; background:var(--card); box-shadow:0 24px 70px rgba(23,35,43,.16); }
+    header { padding:26px 28px 22px; color:#fffdf8; background:var(--teal); }
+    .eyebrow { margin:0 0 10px; color:#b9e6d7; font:700 11px/1.2 system-ui,sans-serif; letter-spacing:1.8px; text-transform:uppercase; }
+    h1 { margin:0; font-size:32px; line-height:1; font-weight:500; }
+    .intro { margin:12px 0 0; color:#dceee7; font:15px/1.45 system-ui,sans-serif; }
+    #messages { display:flex; min-height:280px; max-height:420px; flex-direction:column; gap:12px; overflow:auto; padding:24px; background:rgba(255,253,248,.7); }
+    .message { max-width:84%; padding:12px 15px; border-radius:14px; font:15px/1.45 system-ui,sans-serif; white-space:pre-wrap; }
+    .bot { align-self:flex-start; color:var(--ink); background:var(--mint); border-bottom-left-radius:4px; }
+    .user { align-self:flex-end; color:#fff; background:var(--teal); border-bottom-right-radius:4px; }
+    .typing { color:var(--muted); font-style:italic; }
+    form { display:flex; gap:10px; padding:16px; border-top:1px solid var(--line); background:#fff; }
+    input { min-width:0; flex:1; padding:13px 15px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:#fffdf8; font:15px system-ui,sans-serif; outline:none; }
+    input:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(23,107,104,.12); }
+    button { width:48px; border:0; border-radius:10px; color:#fff; background:var(--teal); font:700 21px system-ui,sans-serif; cursor:pointer; }
+    button:disabled { cursor:wait; opacity:.55; }
+    footer { padding:0 18px 14px; color:var(--muted); text-align:center; font:11px system-ui,sans-serif; background:#fff; }
+  </style>
+</head>
+<body>
+  <main class="chat">
+    <header>
+      <p class="eyebrow">Marea Digital</p>
+      <h1>Tu asistente de crecimiento</h1>
+      <p class="intro">Pregúntame por páginas web, auditorías y sistemas de marketing con IA.</p>
+    </header>
+    <section id="messages" aria-live="polite"></section>
+    <form id="form">
+      <input id="input" maxlength="2000" autocomplete="off" placeholder="Escribe tu pregunta..." aria-label="Tu pregunta">
+      <button id="send" type="submit" aria-label="Enviar">&#8594;</button>
+    </form>
+    <footer>Respuestas breves y orientadas a tu negocio</footer>
+  </main>
+  <script>
+    const API_URL = "/api/chat";
+    const BUSINESS_ID = "marea-digital";
+    const messages = document.querySelector("#messages");
+    const form = document.querySelector("#form");
+    const input = document.querySelector("#input");
+    const send = document.querySelector("#send");
+    let history = [];
+    let sending = false;
+
+    function addMessage(text, role, extraClass = "") {
+      const element = document.createElement("div");
+      element.className = `message ${role} ${extraClass}`;
+      element.textContent = text;
+      messages.appendChild(element);
+      messages.scrollTop = messages.scrollHeight;
+      return element;
+    }
+
+    addMessage("Hola, soy el asistente de Marea Digital. ¿En qué puedo ayudarte?", "bot");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message || sending) return;
+      sending = true;
+      send.disabled = true;
+      input.value = "";
+      addMessage(message, "user");
+      const typing = addMessage("Escribiendo...", "bot", "typing");
+      try {
+        const response = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ businessId: BUSINESS_ID, message, history }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "request_failed");
+        typing.remove();
+        addMessage(data.reply, "bot");
+        history.push({ role: "user", content: message }, { role: "assistant", content: data.reply });
+      } catch (error) {
+        typing.textContent = "No he podido responder ahora. Escríbenos por WhatsApp al +34 676 282 991.";
+        typing.classList.remove("typing");
+      } finally {
+        sending = false;
+        send.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>

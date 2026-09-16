@@ -1,18 +1,16 @@
-# Marea Digital - Chatbot Backend
+# Marea Digital - Chatbot
 
 One backend serves the AI chatbot for every client. Each client gets a `businessId`
 entry in `clients.ts` (their own system prompt, allowed website, and conversation cap).
 Their site embeds `widget-example.html`'s script, pointed at your deployed URL.
 
-## Deploy (one-time setup)
+## Deploy
 
-1. Create a free account at vercel.com and install their CLI: `npm i -g vercel`
-2. From this folder, run `vercel` and follow the prompts (link or create a new project)
-3. Add your Anthropic API key as a secret: `vercel env add ANTHROPIC_API_KEY`
-   (paste your key from console.anthropic.com when prompted; choose Production + Preview)
-4. Deploy: `vercel --prod`
-5. Note the URL it gives you (e.g. `https://marea-digital-chatbot.vercel.app`) -
-   that's your `API_URL` for every client's widget.
+1. Import this repository into Vercel.
+2. Deploy on the Hobby plan for private testing.
+3. Open the generated URL. The homepage includes the Marea Digital chat.
+
+This version uses predefined FAQ replies and does not require an API key or paid AI provider.
 
 ## Onboarding a new client
 
@@ -29,5 +27,6 @@ Their site embeds `widget-example.html`'s script, pointed at your deployed URL.
 - `monthlyConversationCap` is not yet enforced automatically - it documents the
   fair-use number from the site. Worth adding real usage tracking (a simple
   database counter) before this scales past a couple of clients.
-- The API key never reaches the browser - it only lives in Vercel's environment,
-  read server-side by `api/chat.ts`.
+- Replies are intentionally limited to the FAQ logic in `api/chat.ts`.
+- For AI-generated replies later, restore a server-side provider integration and
+   store its key only in Vercel environment variables.
